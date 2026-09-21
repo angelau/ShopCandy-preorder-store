@@ -156,63 +156,48 @@ function renderOrdersTable(orders) {
         </tr>
     `).join('');
 }
-// Replace with your actual Cloudinary Cloud Name
-const CLOUDINARY_CLOUD_NAME = "doq4g8g2x"; 
+// Replace with your actual Cloudinary details
+const CLOUDINARY_CLOUD_NAME = "doq4g8g2x";
 const CLOUDINARY_UPLOAD_PRESET = "preorder_uploads";
 
-let myWidget;
+let myWidget = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-    initCloudinaryWidget();
-});
+function openCloudinaryWidget() {
+    // Check if Cloudinary library is loaded
+    if (typeof cloudinary === "undefined") {
+        alert("Cloudinary library failed to load. Please check your internet connection or script tag.");
+        return;
+    }
 
-function initCloudinaryWidget() {
-    const uploadBtn = document.getElementById("uploadWidgetBtn");
-    if (!uploadBtn) return;
-
-    myWidget = cloudinary.createUploadWidget({
-        cloudName: doq4g8g2x,
-        uploadPreset: preorder_uploads,
-        sources: ['local', 'url', 'camera'],
-        multiple: false,
-        folder: "products", // Optional: organizes uploads in a specific folder
-        clientAllowedFormats: ["png", "jpeg", "jpg", "webp"],
-        maxFileSize: 5000000, // 5MB max limit
-        styles: {
-            palette: {
-                window: "#FFFFFF",
-                windowBorder: "#909090",
-                tabIcon: "#EC4899",
-                menuIcons: "#5A5A5A",
-                textDark: "#000000",
-                textLight: "#FFFFFF",
-                link: "#EC4899",
-                action: "#EC4899",
-                inactiveTabIcon: "#0E2D5A",
-                error: "#F44235",
-                inProgress: "#0078FF",
-                complete: "#20B832",
-                sourceBg: "#E4E4E7"
+    // Lazy-initialize the widget on first click
+    if (!myWidget) {
+        myWidget = cloudinary.createUploadWidget({
+            cloudName: CLOUDINARY_CLOUD_NAME,
+            uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+            sources: ['local', 'url', 'camera'],
+            multiple: false,
+            folder: "products",
+            clientAllowedFormats: ["png", "jpeg", "jpg", "webp"],
+            maxFileSize: 5000000
+        }, (error, result) => {
+            if (!error && result && result.event === "success") {
+                const imageUrl = result.info.secure_url;
+                
+                // Set value in the input field
+                document.getElementById("prodImage").value = imageUrl;
+                
+                // Show thumbnail preview
+                showImagePreview(imageUrl);
+            } else if (error) {
+                console.error("Cloudinary Upload Error:", error);
             }
-        }
-    }, (error, result) => {
-        if (!error && result && result.event === "success") {
-            const imageUrl = result.info.secure_url;
-            
-            // Populate hidden/readonly input with secure image URL
-            document.getElementById("prodImage").value = imageUrl;
-            
-            // Update live preview
-            showImagePreview(imageUrl);
-        }
-    });
+        });
+    }
 
-    uploadBtn.addEventListener("click", () => {
-        myWidget.open();
-    }, false);
+    // Open widget
+    myWidget.open();
 }
 
-// Helper function to display selected image thumbnail
 function showImagePreview(url) {
     const container = document.getElementById("imagePreviewContainer");
     const img = document.getElementById("imagePreview");
@@ -222,14 +207,4 @@ function showImagePreview(url) {
     } else {
         container.style.display = "none";
     }
-}
-
-// Update resetProductForm() in admin.js to also clear the image preview:
-function resetProductForm() {
-    document.getElementById("productForm").reset();
-    document.getElementById("prodId").value = "";
-    document.getElementById("prodImage").value = "";
-    showImagePreview("");
-    document.getElementById("formTitle").innerText = "Add New Product";
-    document.getElementById("saveProdBtn").innerText = "Save Product";
 }

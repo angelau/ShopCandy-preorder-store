@@ -73,19 +73,19 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="prodImage">Product Image</label>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="url" id="prodImage" placeholder="https://res.cloudinary.com/..." readonly style="background: #f4f4f5; cursor: not-allowed;">
-                                <button type="button" id="uploadWidgetBtn" class="action-btn btn-edit" style="white-space: nowrap; padding: 0.6rem 1rem;">
-                                    📷 Upload
-                                </button>
-                            </div>
-                            <!-- Image Preview Thumbnail -->
-                               <div id="imagePreviewContainer" style="margin-top: 0.5rem; display: none;">
-                                <img id="imagePreview" src="" alt="Preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e4e4e7;">
-                        </div>
-                        </div>
+                       <div class="form-group">
+    <label for="prodImage">Product Image</label>
+    <div style="display: flex; gap: 0.5rem;">
+        <input type="url" id="prodImage" placeholder="https://res.cloudinary.com/..." readonly style="background: #f4f4f5; cursor: not-allowed;">
+        <button type="button" id="uploadWidgetBtn" onclick="openCloudinaryWidget()" class="action-btn btn-edit" style="white-space: nowrap; padding: 0.6rem 1rem;">
+            📷 Upload
+        </button>
+    </div>
+    <!-- Image Preview Thumbnail -->
+    <div id="imagePreviewContainer" style="margin-top: 0.5rem; display: none;">
+        <img id="imagePreview" src="" alt="Preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e4e4e7;">
+    </div>
+</div>
 
                         <div class="form-group">
                             <label for="prodDesc">Description</label>
