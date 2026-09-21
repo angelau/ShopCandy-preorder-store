@@ -6,7 +6,7 @@ compatibility_date = "2026-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "preorder-db"
-database_id = "YOUR_DATABASE_ID_GOES_HERE"
+database_id = b006e6d3-cae9-404f-81be-2092aa973be9
 
 # Image Storage connection
 [[r2_buckets]]
