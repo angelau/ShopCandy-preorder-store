@@ -17,12 +17,14 @@ function switchTab(tabName) {
 // 1. Load Products
 async function loadProducts() {
     try {
-        const res = await fetch("/api/products");
-        if (!res.ok) throw new Error("Failed to retrieve products");
-        adminProducts = await res.json();
-        renderInventoryTable(adminProducts);
+        const res = await fetch("/api/products", {
+            credentials: "same-origin"
+        });
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const products = await res.json();
+        renderProductTable(products);
     } catch (err) {
-        document.getElementById("inventoryTable").innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">${err.message}</td></tr>`;
+        console.error("Error loading products:", err);
     }
 }
 
@@ -78,13 +80,18 @@ async function saveProduct(e) {
         const res = await fetch(endpoint, {
             method,
             headers: { "Content-Type": "application/json" },
+            credentials: "same-origin", // <-- Added this line to pass Basic Auth credentials
             body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error("Operation failed");
+        if (!res.ok) {
+            const errorMsg = await res.text();
+            throw new Error(errorMsg || "Operation failed");
+        }
 
         resetProductForm();
         await loadProducts();
+        alert("Product saved successfully!");
     } catch (err) {
         alert("Error saving product: " + err.message);
     } finally {
@@ -119,8 +126,16 @@ async function deleteProduct(id) {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
     try {
-        const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Could not delete item");
+        const res = await fetch(`/api/products/${id}`, { 
+            method: "DELETE",
+            credentials: "same-origin" // <-- Sends Basic Auth credentials with the DELETE request
+        });
+
+        if (!res.ok) {
+            const errorMsg = await res.text();
+            throw new Error(errorMsg || "Could not delete item");
+        }
+
         await loadProducts();
     } catch (err) {
         alert("Delete failed: " + err.message);

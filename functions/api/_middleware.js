@@ -2,13 +2,18 @@ export async function onRequest(context) {
     const { request, env, next } = context;
     const url = new URL(request.url);
 
-    // 1. Check if the path needs protection (/admin or write operations on /api/products)
+    // Bypass authentication for OPTIONS requests (CORS preflight)
+    if (request.method === "OPTIONS") {
+        return next();
+    }
+
+    // 1. Check if the path needs protection
     const isAdminPage = url.pathname.startsWith("/admin");
     const isWriteApi = url.pathname.startsWith("/api/products") && ["POST", "PUT", "DELETE"].includes(request.method);
     const isOrderListApi = url.pathname.startsWith("/api/orders") && request.method === "GET";
 
     if (isAdminPage || isWriteApi || isOrderListApi) {
-        // 2. Fetch expected credentials from D1 settings or fallback defaults
+        // 2. Fetch expected credentials
         let expectedUser = "admin";
         let expectedPass = "admin123";
 
@@ -19,7 +24,7 @@ export async function onRequest(context) {
             if (userSetting) expectedUser = userSetting.value;
             if (passSetting) expectedPass = passSetting.value;
         } catch (e) {
-            // Fallback to default credentials if database query fails
+            // Fallback default credentials
         }
 
         // 3. Extract Authorization Header
@@ -34,12 +39,12 @@ export async function onRequest(context) {
             });
         }
 
-        // 4. Decode base64 credentials (username:password)
+        // 4. Decode credentials
         try {
             const base64Credentials = authHeader.split(" ")[1];
             const credentials = atob(base64Credentials).split(":");
             const username = credentials[0];
-            const password = credentials.slice(1).join(":"); // Handles passwords containing colons
+            const password = credentials.slice(1).join(":");
 
             if (username !== expectedUser || password !== expectedPass) {
                 return new Response("Forbidden: Invalid credentials.", {
@@ -54,6 +59,5 @@ export async function onRequest(context) {
         }
     }
 
-    // 5. Credentials valid or route public -> proceed
     return next();
 }
