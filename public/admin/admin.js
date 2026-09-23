@@ -80,7 +80,7 @@ async function saveProduct(e) {
         const res = await fetch(endpoint, {
             method,
             headers: { "Content-Type": "application/json" },
-            credentials: "same-origin", // <-- Added this line to pass Basic Auth credentials
+            credentials: "same-origin", 
             body: JSON.stringify(payload)
         });
 
@@ -128,7 +128,7 @@ async function deleteProduct(id) {
     try {
         const res = await fetch(`/api/products/${id}`, { 
             method: "DELETE",
-            credentials: "same-origin" // <-- Sends Basic Auth credentials with the DELETE request
+            credentials: "same-origin"
         });
 
         if (!res.ok) {
@@ -222,4 +222,28 @@ function showImagePreview(url) {
     } else {
         container.style.display = "none";
     }
+}
+function renderProductTable(products) {
+    const tbody = document.getElementById("productTableBody"); 
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No products found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = products.map(prod => `
+        <tr>
+            <td>
+                ${prod.image_url ? `<img src="${prod.image_url}" width="40" height="40" style="object-fit:cover; border-radius:4px;" />` : 'No Image'}
+            </td>
+            <td><strong>${prod.name}</strong></td>
+            <td>₦${Number(prod.price).toLocaleString()}</td>
+            <td><span class="badge">${prod.status || 'In Stock'}</span></td>
+            <td>
+                <button onclick="editProduct(${prod.id})">Edit</button>
+                <button onclick="deleteProduct(${prod.id})">Delete</button>
+            </td>
+        </tr>
+    `).join("");
 }

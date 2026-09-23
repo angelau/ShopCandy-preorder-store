@@ -39,6 +39,7 @@ export async function onRequestGet(context) {
 }
 
 // POST Handler (Create Product)
+
 export async function onRequestPost(context) {
     const { env, request } = context;
 
@@ -46,23 +47,34 @@ export async function onRequestPost(context) {
         const body = await request.json();
         const { name, price, status, image_url, description } = body;
 
-        if (!name || price === undefined) {
+        if (!name || price === undefined || price === null) {
             return new Response("Missing required fields: name or price", { status: 400 });
         }
 
-        const result = await env.DB.prepare(
-            "INSERT INTO products (name, price, status, image_url, description, visible) VALUES (?, ?, ?, ?, ?, 1)"
-        ).bind(name, price, status || "In Stock", image_url || null, description || "").run();
+        const query = `
+            INSERT INTO products (name, price, status, image_url, description, visible, created_at) 
+            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+        `;
 
-        return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
+        const result = await env.DB.prepare(query)
+            .bind(
+                String(name), 
+                parseFloat(price) || 0, 
+                status || "In Stock", 
+                image_url || null, 
+                description || ""
+            )
+            .run();
+
+        return new Response(JSON.stringify({ success: true, id: result.meta?.last_row_id }), {
             status: 201,
             headers: { "Content-Type": "application/json" }
         });
     } catch (err) {
-        return new Response(`Save failed: ${err.message}`, { status: 500 });
+        console.error("D1 Insert Error:", err);
+        return new Response(`Database Error: ${err.message}`, { status: 500 });
     }
 }
-
 // PUT Handler (Update Product)
 export async function onRequestPut(context) {
     const { env, request } = context;
