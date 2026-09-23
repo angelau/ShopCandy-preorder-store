@@ -169,15 +169,18 @@ function toggleCart(open) {
 // 6. Submit Order & Redirect to WhatsApp
 async function handleCheckout(e) {
     e.preventDefault();
+    console.log("Checkout form submitted!"); 
 
-    if (!cart.length) {
-        alert("Your cart is empty!");
+    if (!cart || cart.length === 0) {
+        alert("Your cart is empty! Add an item before checking out.");
         return;
     }
 
     const btn = document.getElementById("checkoutBtn");
-    btn.disabled = true;
-    btn.innerText = "Processing Order...";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Processing Order...";
+    }
 
     const payload = {
         customer_name: document.getElementById("custName").value,
@@ -186,6 +189,8 @@ async function handleCheckout(e) {
         address: document.getElementById("custAddress").value,
         cart_items: cart
     };
+
+    console.log("Submitting Payload:", payload);
 
     try {
         const res = await fetch("/api/orders", {
@@ -197,13 +202,21 @@ async function handleCheckout(e) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to process checkout");
 
-        // Clear cart and redirect to WhatsApp
+        // Clear cart and redirect
         cart = [];
         saveCart();
         window.location.href = data.whatsapp_url;
     } catch (err) {
         alert("Checkout Error: " + err.message);
-        btn.disabled = false;
-        btn.innerText = "Preorder via WhatsApp 🚀";
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Preorder via WhatsApp 🚀";
+        }
     }
 }
+
+window.addToCart = addToCart;
+window.filterCategory = filterCategory;
+window.updateQuantity = updateQuantity;
+window.handleCheckout = handleCheckout;
+window.toggleCart = toggleCart;
