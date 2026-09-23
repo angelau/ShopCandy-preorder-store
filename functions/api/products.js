@@ -45,15 +45,15 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
-        const { name, price, status, image_url, description } = body;
+        const { name, price, status, image_url, description, category } = body;
 
         if (!name || price === undefined || price === null) {
             return new Response("Missing required fields: name or price", { status: 400 });
         }
 
         const query = `
-            INSERT INTO products (name, price, status, image_url, description, visible, created_at) 
-            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+            INSERT INTO products (name, price, status, image_url, description, category, visible, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
         `;
 
         const result = await env.DB.prepare(query)
@@ -62,7 +62,8 @@ export async function onRequestPost(context) {
                 parseFloat(price) || 0, 
                 status || "In Stock", 
                 image_url || null, 
-                description || ""
+                description || "",
+                category || "General" // <-- Provides fallback so NOT NULL constraint passes
             )
             .run();
 
@@ -80,17 +81,24 @@ export async function onRequestPut(context) {
     const { env, request } = context;
     const url = new URL(request.url);
     
-    // Extract ID from path e.g., /api/products/5 or query param ?id=5
     const pathParts = url.pathname.split("/");
     const id = pathParts[pathParts.length - 1] || url.searchParams.get("id");
 
     try {
         const body = await request.json();
-        const { name, price, status, image_url, description } = body;
+        const { name, price, status, image_url, description, category } = body;
 
         await env.DB.prepare(
-            "UPDATE products SET name = ?, price = ?, status = ?, image_url = ?, description = ? WHERE id = ?"
-        ).bind(name, price, status, image_url, description, id).run();
+            "UPDATE products SET name = ?, price = ?, status = ?, image_url = ?, description = ?, category = ? WHERE id = ?"
+        ).bind(
+            String(name), 
+            parseFloat(price) || 0, 
+            status || "In Stock", 
+            image_url || null, 
+            description || "", 
+            category || "General", 
+            id
+        ).run();
 
         return new Response(JSON.stringify({ success: true }), {
             headers: { "Content-Type": "application/json" }

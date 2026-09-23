@@ -64,14 +64,15 @@ async function saveProduct(e) {
     const priceInNaira = parseFloat(document.getElementById("prodPrice").value);
     const priceInKobo = Math.round(priceInNaira * 100);
 
-    const payload = {
-        id: id || undefined,
-        name: document.getElementById("prodName").value,
-        price: priceInKobo,
-        status: document.getElementById("prodStatus").value,
-        image_url: document.getElementById("prodImage").value,
-        description: document.getElementById("prodDesc").value
-    };
+   const payload = {
+    id: id || undefined,
+    name: document.getElementById("prodName").value,
+    price: priceInKobo,
+    status: document.getElementById("prodStatus").value,
+    image_url: document.getElementById("prodImage").value,
+    description: document.getElementById("prodDesc").value,
+    category: document.getElementById("prodCategory") ? document.getElementById("prodCategory").value : "General"
+};
 
     const endpoint = isEdit ? `/api/products/${id}` : "/api/products";
     const method = isEdit ? "PUT" : "POST";
@@ -109,7 +110,7 @@ function editProduct(id) {
     document.getElementById("prodStatus").value = p.status;
     document.getElementById("prodImage").value = p.image_url || "";
     document.getElementById("prodDesc").value = p.description || "";
-
+    document.getElementById("prodCategory").value = p.category || "General";
     document.getElementById("formTitle").innerText = "Edit Product";
     document.getElementById("saveProdBtn").innerText = "Update Product";
 }
