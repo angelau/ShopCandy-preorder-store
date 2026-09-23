@@ -4,7 +4,7 @@ let cart = JSON.parse(localStorage.getItem("shopcandy_cart") || "[]");
 
 document.addEventListener("DOMContentLoaded", () => {
     fetchProducts();
-    updateCartUI();
+    updateCartUI(); // Runs once when page loads
 });
 
 // 1. Fetch Products from Backend API
@@ -14,7 +14,6 @@ async function fetchProducts() {
         if (!res.ok) throw new Error("Failed to load products");
         allProducts = await res.json();
         
-        // Dynamically build category pills & render grid
         renderCategoryTabs();
         renderProducts();
     } catch (err) {
@@ -30,7 +29,6 @@ function renderCategoryTabs() {
     const filterContainer = document.getElementById("categoryFilters");
     if (!filterContainer) return;
 
-    // Extract unique categories from database items
     const categories = ["all", ...new Set(allProducts.map(p => p.category).filter(Boolean))];
 
     filterContainer.innerHTML = categories.map(cat => `
@@ -51,12 +49,11 @@ function filterCategory(cat) {
     renderProducts();
 }
 
-// 4. Render Product Cards (Filtered by Selected Category)
+// 4. Render Product Cards
 function renderProducts() {
     const grid = document.getElementById("productGrid");
     if (!grid) return;
     
-    // Filter products by database category
     const filtered = selectedCategory === "all" 
         ? allProducts 
         : allProducts.filter(p => p.category === selectedCategory);
@@ -117,7 +114,7 @@ function updateQuantity(productId, delta) {
 
 function saveCart() {
     localStorage.setItem("shopcandy_cart", JSON.stringify(cart));
-    updateCartUI();
+    updateCartUI(); // Runs whenever cart changes
 }
 
 function updateCartUI() {
@@ -172,11 +169,21 @@ function toggleCart(open) {
 
 // 6. Submit Order & Redirect to WhatsApp
 async function handleCheckout(e) {
-    e.preventDefault();
-    console.log("Checkout form submitted!");
+    if (e && e.preventDefault) e.preventDefault();
+    console.log("Checkout trigger fired!");
 
     if (!cart || cart.length === 0) {
         alert("Your cart is empty! Add an item before checking out.");
+        return;
+    }
+
+    const nameInput = document.getElementById("custName");
+    const phoneInput = document.getElementById("custPhone");
+    const emailInput = document.getElementById("custEmail");
+    const addressInput = document.getElementById("custAddress");
+
+    if (!nameInput.value || !phoneInput.value || !emailInput.value || !addressInput.value) {
+        alert("Please fill in all checkout fields.");
         return;
     }
 
@@ -187,10 +194,10 @@ async function handleCheckout(e) {
     }
 
     const payload = {
-        customer_name: document.getElementById("custName").value,
-        phone: document.getElementById("custPhone").value,
-        email: document.getElementById("custEmail").value,
-        address: document.getElementById("custAddress").value,
+        customer_name: nameInput.value,
+        phone: phoneInput.value,
+        email: emailInput.value,
+        address: addressInput.value,
         cart_items: cart
     };
 

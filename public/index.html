@@ -54,43 +54,41 @@
                 <span>Subtotal</span>
                 <span id="cartSubtotal">₦0</span>
             </div>
-            
-           <form id="checkoutForm" onsubmit="handleCheckout(event)">
+          <form id="checkoutForm" onsubmit="event.preventDefault(); handleCheckout(event);">
     <div class="form-group">
         <label for="custName">Full Name</label>
-        <input type="text" id="custName" placeholder="Jane Doe">
+        <input type="text" id="custName" required placeholder="Jane Doe">
     </div>
 
     <div class="form-group">
         <label for="custPhone">Phone Number</label>
-        <input type="tel" id="custPhone" placeholder="08012345678">
+        <input type="tel" id="custPhone" required placeholder="08012345678">
     </div>
 
     <div class="form-group">
         <label for="custEmail">Email Address</label>
-        <input type="email" id="custEmail" placeholder="jane@example.com">
+        <input type="email" id="custEmail" required placeholder="jane@example.com">
     </div>
 
     <div class="form-group">
         <label for="custAddress">Delivery Address</label>
-        <textarea id="custAddress" placeholder="Enter delivery address"></textarea>
+        <textarea id="custAddress" required placeholder="Enter delivery address"></textarea>
     </div>
 
-    <button type="submit" id="checkoutBtn" class="btn-primary" style="width: 100%; margin-top: 1rem; cursor: pointer; position: relative; z-index: 1000;">
+    <!-- Added direct onclick and z-index -->
+    <button 
+        type="button" 
+        id="checkoutBtn" 
+        class="btn-primary" 
+        onclick="handleCheckout(event)" 
+        style="width: 100%; margin-top: 1rem; cursor: pointer; position: relative; z-index: 1000;"
+    >
         Preorder via WhatsApp 🚀
     </button>
 </form>
         </div>
     </div>
-    <button 
-    type="button" 
-    id="checkoutBtn" 
-    class="btn-primary" 
-    onclick="handleCheckout(event)"
-    style="width: 100%; margin-top: 1rem; cursor: pointer;"
->
-    Preorder via WhatsApp 🚀
-</button>
+   
 
     <!-- Floating WhatsApp Contact Button -->
     <a href="https://wa.me/2348163807873" target="_blank" class="whatsapp-float" title="Contact Us on WhatsApp">💬</a>
