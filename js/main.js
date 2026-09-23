@@ -1,6 +1,28 @@
+// Storage key constant
+const CART_STORAGE_KEY = 'shopcandy_cart';
+
+// Helper functions to manage localStorage
+function loadCartFromStorage() {
+    try {
+        const saved = localStorage.getItem(CART_STORAGE_KEY);
+        return saved ? JSON.parse(saved) : [];
+    } catch (err) {
+        console.error("Failed to load cart from localStorage:", err);
+        return [];
+    }
+}
+
+function saveCartToStorage() {
+    try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch (err) {
+        console.error("Failed to save cart to localStorage:", err);
+    }
+}
+
 // Global State
 let allProducts = [];
-let cart = [];
+let cart = loadCartFromStorage(); // Loads saved items on script load
 let selectedCategory = "all";
 
 // Fetch Products from API or Fallback
@@ -112,6 +134,9 @@ function addToCart(productId) {
 }
 
 function updateCartUI() {
+
+    saveCartToStorage();
+
     const cartCount = document.getElementById("cartCount");
     const cartItems = document.getElementById("cartItems");
     const cartFooter = document.getElementById("cartFooter");
@@ -180,24 +205,68 @@ function toggleCart(open) {
 
 function handleCheckout(e) {
     e.preventDefault();
-    const name = document.getElementById("custName").value;
-    const phone = document.getElementById("custPhone").value;
-    const email = document.getElementById("custEmail").value;
-    const address = document.getElementById("custAddress").value;
 
-    let itemsList = cart.map(item => `• ${item.name} x${item.qty} (₦${((item.price * item.qty)/100).toLocaleString()})`).join('%0A');
-    let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // 1. Validate cart contents
+    if (!cart || cart.length === 0) {
+        alert("Your cart is empty!");
+        return;
+    }
 
-    let message = `*New ShopCandy Order*%0A%0A` +
-        `*Customer Details:*%0A` +
-        `Name: ${name}%0A` +
-        `Phone: ${phone}%0A` +
-        `Email: ${email}%0A` +
-        `Address: ${address}%0A%0A` +
-        `*Order Items:*%0A${itemsList}%0A%0A` +
-        `*Total:* ₦${(total/100).toLocaleString()}`;
+    // 2. Gather customer details
+    const name = document.getElementById("custName").value.trim();
+    const phone = document.getElementById("custPhone").value.trim();
+    const email = document.getElementById("custEmail").value.trim();
+    const address = document.getElementById("custAddress").value.trim();
 
-    window.open(`https://wa.me/2348163807873?text=${message}`, '_blank');
+    // 3. Compute financial totals
+    const totalKobo = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const formattedTotal = (totalKobo / 100).toLocaleString('en-NG', {
+        style: 'currency',
+        currency: 'NGN'
+    });
+
+    // 4. Format order items into a clean list
+    const itemsList = cart.map((item, index) => {
+        const itemTotal = ((item.price * item.qty) / 100).toLocaleString();
+        const badge = item.status === 'preorder' ? ' [PREORDER]' : '';
+        return `${index + 1}. *${item.name}*${badge}\n   └ Qty: ${item.qty} × ₦${(item.price / 100).toLocaleString()} = ₦${itemTotal}`;
+    }).join('\n\n');
+
+    // 5. Construct structured WhatsApp message
+    const rawMessage = 
+`🛍️ *NEW SHOPCANDY ORDER*
+----------------------------------
+👤 *CUSTOMER DETAILS*
+• *Name:* ${name}
+• *Phone:* ${phone}
+• *Email:* ${email}
+• *Delivery Address:* ${address}
+
+📦 *ORDER ITEMS*
+${itemsList}
+
+----------------------------------
+💳 *TOTAL AMOUNT:* ${formattedTotal}
+----------------------------------
+
+Please confirm availability and account details for payment.`;
+
+    // 6. Encode message safely for URL query string
+    const whatsappNumber = "2348163807873";
+    const encodedMessage = encodeURIComponent(rawMessage);
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+    // 7. Redirect to WhatsApp
+    window.open(whatsappUrl, '_blank');
+
+    cart = [];
+    updateCartUI();
+    
+    // Clear the checkout form inputs
+    document.getElementById("checkoutForm").reset();
+
+    // Close the drawer
+    toggleCart(false);
 }
 
 // Expose functions globally for direct HTML attribute calls
@@ -207,4 +276,8 @@ window.handleCheckout = handleCheckout;
 window.addToCart = addToCart;
 
 // Initialize on page load
-document.addEventListener("DOMContentLoaded", fetchProducts);
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", () => {
+    fetchProducts();
+    updateCartUI(); // Restores badge count & saved cart drawer items on refresh
+});
