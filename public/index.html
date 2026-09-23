@@ -13,7 +13,7 @@
     <!-- Header Navigation -->
     <header>
         <a href="/" class="logo">ShopCandy</a>
-        <button class="cart-btn" onclick="toggleCart(true)">
+        <button type="button" class="cart-btn" onclick="toggleCart(true)">
             Cart <span class="cart-badge" id="cartCount">0</span>
         </button>
     </header>
@@ -24,19 +24,14 @@
         <p>Preorder new arrivals before stock runs out, or shop instantly available items.</p>
     </section>
 
-    <!-- Filter Categories -->
-    <div class="filters" id="categoryFilters">
-        <button class="filter-btn active" onclick="filterCategory('all')">All Products</button>
-        <button class="filter-btn" onclick="filterCategory('preorder')">⏳ Preorders</button>
-        <button class="filter-btn" onclick="filterCategory('in_stock')">⚡ In Stock</button>
-    </div>
-
-    <!-- Product Grid Container -->
+    <!-- Main Container -->
     <main class="container">
-
+        <!-- Category Filter Tabs Container (Single Unique ID) -->
         <div id="categoryFilters" class="category-filters-container" style="display: flex; gap: 0.5rem; overflow-x: auto; padding: 1rem 0; margin-bottom: 1.5rem;">
-      
-    </div>
+            <!-- Generated dynamically by main.js -->
+        </div>
+
+        <!-- Product Grid Container -->
         <div class="product-grid" id="productGrid">
             <p style="grid-column: 1/-1; text-align: center; color: var(--gray);">Loading products...</p>
         </div>
@@ -47,7 +42,7 @@
     <div class="cart-drawer" id="cartDrawer">
         <div class="drawer-header">
             <h2>Your Cart</h2>
-            <button class="close-btn" onclick="toggleCart(false)">&times;</button>
+            <button type="button" class="close-btn" onclick="toggleCart(false)">&times;</button>
         </div>
 
         <div class="drawer-body" id="cartItems">
@@ -55,43 +50,43 @@
         </div>
 
         <div class="drawer-footer" id="cartFooter" style="display: none;">
-            <div class="summary-row">
+            <div class="summary-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 1rem;">
                 <span>Subtotal</span>
                 <span id="cartSubtotal">₦0</span>
             </div>
             
-            <!-- Inside your #cartDrawer or #cartFooter -->
-<form id="checkoutForm" onsubmit="handleCheckout(event)">
-    <div class="form-group">
-        <label for="custName">Full Name</label>
-        <input type="text" id="custName" required placeholder="Jane Doe">
-    </div>
+            <form id="checkoutForm" onsubmit="handleCheckout(event)">
+                <div class="form-group">
+                    <label for="custName">Full Name</label>
+                    <input type="text" id="custName" required placeholder="Jane Doe">
+                </div>
 
-    <div class="form-group">
-        <label for="custPhone">Phone Number</label>
-        <input type="tel" id="custPhone" required placeholder="08012345678">
-    </div>
+                <div class="form-group">
+                    <label for="custPhone">Phone Number</label>
+                    <input type="tel" id="custPhone" required placeholder="08012345678">
+                </div>
 
-    <div class="form-group">
-        <label for="custEmail">Email Address</label>
-        <input type="email" id="custEmail" required placeholder="jane@example.com">
-    </div>
+                <div class="form-group">
+                    <label for="custEmail">Email Address</label>
+                    <input type="email" id="custEmail" required placeholder="jane@example.com">
+                </div>
 
-    <div class="form-group">
-        <label for="custAddress">Delivery Address</label>
-        <textarea id="custAddress" required placeholder="Enter delivery address"></textarea>
-    </div>
+                <div class="form-group">
+                    <label for="custAddress">Delivery Address</label>
+                    <textarea id="custAddress" required placeholder="Enter delivery address"></textarea>
+                </div>
 
-    <button type="submit" id="checkoutBtn" class="btn-primary" style="width: 100%; margin-top: 1rem;">
-        Preorder via WhatsApp 🚀
-    </button>
-</form>
+                <button type="submit" id="checkoutBtn" class="btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Preorder via WhatsApp 🚀
+                </button>
+            </form>
         </div>
     </div>
 
     <!-- Floating WhatsApp Contact Button -->
     <a href="https://wa.me/2348163807873" target="_blank" class="whatsapp-float" title="Contact Us on WhatsApp">💬</a>
 
+    <!-- Absolute script reference to avoid sub-route pathing issues -->
     <script src="js/main.js"></script>
 </body>
 </html>
