@@ -18,7 +18,10 @@ async function fetchProducts() {
         renderCategoryTabs();
         renderProducts();
     } catch (err) {
-        document.getElementById("productGrid").innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Error loading products: ${err.message}</p>`;
+        const grid = document.getElementById("productGrid");
+        if (grid) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Error loading products: ${err.message}</p>`;
+        }
     }
 }
 
@@ -51,6 +54,7 @@ function filterCategory(cat) {
 // 4. Render Product Cards (Filtered by Selected Category)
 function renderProducts() {
     const grid = document.getElementById("productGrid");
+    if (!grid) return;
     
     // Filter products by database category
     const filtered = selectedCategory === "all" 
@@ -72,7 +76,7 @@ function renderProducts() {
                 <span class="category-tag" style="font-size: 0.75rem; color: var(--gray); text-transform: uppercase;">${prod.category || 'General'}</span>
                 <h3>${prod.name}</h3>
                 <div class="card-price">₦${(prod.price / 100).toLocaleString()}</div>
-                <button class="btn-primary" onclick="addToCart('${prod.id}')">
+                <button type="button" class="btn-primary" onclick="addToCart('${prod.id}')">
                     ${prod.status === 'preorder' ? 'Preorder Now' : 'Add to Cart'}
                 </button>
             </div>
@@ -146,9 +150,9 @@ function updateCartUI() {
                     <h4>${item.name}</h4>
                     <div>₦${(item.price / 100).toLocaleString()}</div>
                     <div class="qty-controls">
-                        <button class="qty-btn" onclick="updateQuantity('${item.product_id}', -1)">-</button>
+                        <button type="button" class="qty-btn" onclick="updateQuantity('${item.product_id}', -1)">-</button>
                         <span>${item.quantity}</span>
-                        <button class="qty-btn" onclick="updateQuantity('${item.product_id}', 1)">+</button>
+                        <button type="button" class="qty-btn" onclick="updateQuantity('${item.product_id}', 1)">+</button>
                     </div>
                 </div>
             </div>
@@ -169,7 +173,7 @@ function toggleCart(open) {
 // 6. Submit Order & Redirect to WhatsApp
 async function handleCheckout(e) {
     e.preventDefault();
-    console.log("Checkout form submitted!"); 
+    console.log("Checkout form submitted!");
 
     if (!cart || cart.length === 0) {
         alert("Your cart is empty! Add an item before checking out.");
@@ -215,6 +219,7 @@ async function handleCheckout(e) {
     }
 }
 
+// Bind functions to window object
 window.addToCart = addToCart;
 window.filterCategory = filterCategory;
 window.updateQuantity = updateQuantity;
