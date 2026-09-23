@@ -4,7 +4,7 @@ let cart = JSON.parse(localStorage.getItem("shopcandy_cart") || "[]");
 
 document.addEventListener("DOMContentLoaded", () => {
     fetchProducts();
-    updateCartUI(); // Runs once when page loads
+    updateCartUI();
 });
 
 // 1. Fetch Products from Backend API
@@ -17,6 +17,7 @@ async function fetchProducts() {
         renderCategoryTabs();
         renderProducts();
     } catch (err) {
+        console.error("Fetch Error:", err);
         const grid = document.getElementById("productGrid");
         if (grid) {
             grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Error loading products: ${err.message}</p>`;
@@ -81,12 +82,19 @@ function renderProducts() {
     `).join('');
 }
 
-// 5. Cart State Management
+// 5. Cart State Management (Fixed String/Number ID Comparison)
 function addToCart(productId) {
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
+    console.log("addToCart triggered for ID:", productId);
 
-    const existingIndex = cart.findIndex(item => item.product_id === productId);
+    // Convert both IDs to strings so number vs string comparison doesn't fail
+    const product = allProducts.find(p => String(p.id) === String(productId));
+    
+    if (!product) {
+        console.error("Product not found in allProducts array:", productId, allProducts);
+        return;
+    }
+
+    const existingIndex = cart.findIndex(item => String(item.product_id) === String(productId));
     if (existingIndex > -1) {
         cart[existingIndex].quantity += 1;
     } else {
@@ -104,7 +112,7 @@ function addToCart(productId) {
 }
 
 function updateQuantity(productId, delta) {
-    const index = cart.findIndex(item => item.product_id === productId);
+    const index = cart.findIndex(item => String(item.product_id) === String(productId));
     if (index > -1) {
         cart[index].quantity += delta;
         if (cart[index].quantity <= 0) cart.splice(index, 1);
@@ -114,7 +122,7 @@ function updateQuantity(productId, delta) {
 
 function saveCart() {
     localStorage.setItem("shopcandy_cart", JSON.stringify(cart));
-    updateCartUI(); // Runs whenever cart changes
+    updateCartUI();
 }
 
 function updateCartUI() {
@@ -201,8 +209,6 @@ async function handleCheckout(e) {
         cart_items: cart
     };
 
-    console.log("Submitting Payload:", payload);
-
     try {
         const res = await fetch("/api/orders", {
             method: "POST",
@@ -213,7 +219,6 @@ async function handleCheckout(e) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to process checkout");
 
-        // Clear cart and redirect
         cart = [];
         saveCart();
         window.location.href = data.whatsapp_url;
@@ -226,7 +231,7 @@ async function handleCheckout(e) {
     }
 }
 
-// Bind functions to window object
+// Bind functions directly to window
 window.addToCart = addToCart;
 window.filterCategory = filterCategory;
 window.updateQuantity = updateQuantity;
