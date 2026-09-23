@@ -1,4 +1,5 @@
 let allProducts = [];
+let selectedCategory = "all";
 let cart = JSON.parse(localStorage.getItem("shopcandy_cart") || "[]");
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,27 +13,63 @@ async function fetchProducts() {
         const res = await fetch("/api/products");
         if (!res.ok) throw new Error("Failed to load products");
         allProducts = await res.json();
-        renderProducts(allProducts);
+        
+        // Dynamically build category pills & render grid
+        renderCategoryTabs();
+        renderProducts();
     } catch (err) {
         document.getElementById("productGrid").innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Error loading products: ${err.message}</p>`;
     }
 }
 
-// 2. Render Product Cards
-function renderProducts(products) {
+// 2. Render Dynamic Category Filter Pills
+function renderCategoryTabs() {
+    const filterContainer = document.getElementById("categoryFilters");
+    if (!filterContainer) return;
+
+    // Extract unique categories from database items
+    const categories = ["all", ...new Set(allProducts.map(p => p.category).filter(Boolean))];
+
+    filterContainer.innerHTML = categories.map(cat => `
+        <button 
+            type="button" 
+            class="filter-btn ${cat === selectedCategory ? 'active' : ''}" 
+            onclick="filterCategory('${cat}')"
+        >
+            ${cat.charAt(0).toUpperCase() + cat.slice(1)}
+        </button>
+    `).join('');
+}
+
+// 3. Category Filter Click Handler
+function filterCategory(cat) {
+    selectedCategory = cat;
+    renderCategoryTabs();
+    renderProducts();
+}
+
+// 4. Render Product Cards (Filtered by Selected Category)
+function renderProducts() {
     const grid = document.getElementById("productGrid");
-    if (!products.length) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gray);">No products found.</p>`;
+    
+    // Filter products by database category
+    const filtered = selectedCategory === "all" 
+        ? allProducts 
+        : allProducts.filter(p => p.category === selectedCategory);
+
+    if (!filtered.length) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gray);">No products found in this category.</p>`;
         return;
     }
 
-    grid.innerHTML = products.map(prod => `
+    grid.innerHTML = filtered.map(prod => `
         <div class="product-card">
             <div class="card-img-wrapper">
                 <span class="badge ${prod.status}">${prod.status === 'preorder' ? 'Preorder' : 'In Stock'}</span>
                 <img src="${prod.image_url || 'https://via.placeholder.com/300?text=No+Photo'}" alt="${prod.name}">
             </div>
             <div class="card-details">
+                <span class="category-tag" style="font-size: 0.75rem; color: var(--gray); text-transform: uppercase;">${prod.category || 'General'}</span>
                 <h3>${prod.name}</h3>
                 <div class="card-price">₦${(prod.price / 100).toLocaleString()}</div>
                 <button class="btn-primary" onclick="addToCart('${prod.id}')">
@@ -43,16 +80,7 @@ function renderProducts(products) {
     `).join('');
 }
 
-// 3. Category Filter Tabs
-function filterCategory(cat) {
-    document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
-    event.target.classList.add("active");
-
-    if (cat === "all") renderProducts(allProducts);
-    else renderProducts(allProducts.filter(p => p.status === cat));
-}
-
-// 4. Cart State Management
+// 5. Cart State Management
 function addToCart(productId) {
     const product = allProducts.find(p => p.id === productId);
     if (!product) return;
@@ -89,19 +117,23 @@ function saveCart() {
 }
 
 function updateCartUI() {
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById("cartCount").innerText = cartCount;
+    const cartCountContainer = document.getElementById("cartCount");
+    if (cartCountContainer) {
+        cartCountContainer.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+    }
 
     const cartContainer = document.getElementById("cartItems");
     const cartFooter = document.getElementById("cartFooter");
 
+    if (!cartContainer) return;
+
     if (!cart.length) {
         cartContainer.innerHTML = `<p style="text-align: center; color: var(--gray); margin-top: 2rem;">Your cart is currently empty.</p>`;
-        cartFooter.style.display = "none";
+        if (cartFooter) cartFooter.style.display = "none";
         return;
     }
 
-    cartFooter.style.display = "block";
+    if (cartFooter) cartFooter.style.display = "block";
     let subtotal = 0;
 
     cartContainer.innerHTML = cart.map(item => {
@@ -123,15 +155,18 @@ function updateCartUI() {
         `;
     }).join('');
 
-    document.getElementById("cartSubtotal").innerText = `₦${(subtotal / 100).toLocaleString()}`;
+    const subtotalEl = document.getElementById("cartSubtotal");
+    if (subtotalEl) subtotalEl.innerText = `₦${(subtotal / 100).toLocaleString()}`;
 }
 
 function toggleCart(open) {
-    document.getElementById("drawerOverlay").classList.toggle("open", open);
-    document.getElementById("cartDrawer").classList.toggle("open", open);
+    const overlay = document.getElementById("drawerOverlay");
+    const drawer = document.getElementById("cartDrawer");
+    if (overlay) overlay.classList.toggle("open", open);
+    if (drawer) drawer.classList.toggle("open", open);
 }
 
-// 5. Submit Order & Redirect to WhatsApp
+// 6. Submit Order & Redirect to WhatsApp
 async function handleCheckout(e) {
     e.preventDefault();
     const btn = document.getElementById("checkoutBtn");
@@ -156,11 +191,9 @@ async function handleCheckout(e) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to process checkout");
 
-        // Clear local cart state
+        // Clear cart and redirect
         cart = [];
         saveCart();
-
-        // Redirect customer to WhatsApp order link
         window.location.href = data.whatsapp_url;
     } catch (err) {
         alert("Checkout Error: " + err.message);
