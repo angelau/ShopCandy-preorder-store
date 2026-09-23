@@ -1,66 +1,66 @@
+// Global State
 let allProducts = [];
+let cart = [];
 let selectedCategory = "all";
-let cart = JSON.parse(localStorage.getItem("shopcandy_cart") || "[]");
 
-document.addEventListener("DOMContentLoaded", () => {
-    fetchProducts();
-    updateCartUI();
-});
-
-// 1. Fetch Products from Backend API
+// Fetch Products from API or Fallback
 async function fetchProducts() {
     try {
-        const res = await fetch("/api/products");
-        if (!res.ok) throw new Error("Failed to load products");
-        allProducts = await res.json();
-        
-        renderCategoryTabs();
-        renderProducts();
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('API fetch failed');
+        allProducts = await response.json();
     } catch (err) {
-        console.error("Fetch Error:", err);
-        const grid = document.getElementById("productGrid");
-        if (grid) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Error loading products: ${err.message}</p>`;
-        }
+        console.warn('Backend API not active, loading mockup state:', err.message);
+        // Fallback mockup data for local testing
+        allProducts = [
+            { id: "1", name: "Gummy Bears Deluxe", category: "Gummies", price: 250000, status: "preorder", image_url: "" },
+            { id: "2", name: "Sour Worms Max", category: "Sour", price: 180000, status: "in_stock", image_url: "" },
+            { id: "3", name: "Chocolate Drops", category: "Chocolates", price: 320000, status: "preorder", image_url: "" }
+        ];
     }
+    renderCategoryFilters();
+    renderProducts();
 }
 
-// 2. Render Dynamic Category Filter Pills
-function renderCategoryTabs() {
-    const filterContainer = document.getElementById("categoryFilters");
-    if (!filterContainer) return;
+// Render Filter Tabs
+function renderCategoryFilters() {
+    const container = document.getElementById("categoryFilters");
+    if (!container) return;
 
     const categories = ["all", ...new Set(allProducts.map(p => p.category).filter(Boolean))];
-
-    filterContainer.innerHTML = categories.map(cat => `
+    
+    container.className = "filters"; // Matches .filters in style.css
+    container.innerHTML = categories.map(cat => `
         <button 
             type="button" 
             class="filter-btn ${cat === selectedCategory ? 'active' : ''}" 
-            onclick="filterCategory('${cat}')"
+            data-category="${cat}"
         >
             ${cat.charAt(0).toUpperCase() + cat.slice(1)}
         </button>
     `).join('');
 }
 
-// 3. Category Filter Click Handler
-function filterCategory(cat) {
-    selectedCategory = cat;
-    renderCategoryTabs();
-    renderProducts();
-}
+// Filter Event Delegation
+document.getElementById("categoryFilters")?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("filter-btn")) {
+        selectedCategory = e.target.dataset.category;
+        renderCategoryFilters();
+        renderProducts();
+    }
+});
 
-// 4. Render Product Cards
+// Render Product Grid
 function renderProducts() {
     const grid = document.getElementById("productGrid");
     if (!grid) return;
-    
+
     const filtered = selectedCategory === "all" 
         ? allProducts 
         : allProducts.filter(p => p.category === selectedCategory);
 
     if (!filtered.length) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gray);">No products found in this category.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gray);">No products found.</p>`;
         return;
     }
 
@@ -68,13 +68,16 @@ function renderProducts() {
         <div class="product-card">
             <div class="card-img-wrapper">
                 <span class="badge ${prod.status}">${prod.status === 'preorder' ? 'Preorder' : 'In Stock'}</span>
-                <img src="${prod.image_url || 'https://via.placeholder.com/300?text=No+Photo'}" alt="${prod.name}">
+                <img src="${prod.image_url || 'https://via.placeholder.com/300?text=ShopCandy'}" alt="${prod.name}">
             </div>
             <div class="card-details">
-                <span class="category-tag" style="font-size: 0.75rem; color: var(--gray); text-transform: uppercase;">${prod.category || 'General'}</span>
                 <h3>${prod.name}</h3>
                 <div class="card-price">₦${(prod.price / 100).toLocaleString()}</div>
-                <button type="button" class="btn-primary" onclick="addToCart('${prod.id}')">
+                <button 
+                    type="button" 
+                    class="btn-primary add-to-cart-btn" 
+                    data-id="${prod.id}"
+                >
                     ${prod.status === 'preorder' ? 'Preorder Now' : 'Add to Cart'}
                 </button>
             </div>
@@ -82,158 +85,126 @@ function renderProducts() {
     `).join('');
 }
 
-// 5. Cart State Management (Fixed String/Number ID Comparison)
+// Product Grid Event Listener (Bypasses inline onclick issues)
+document.getElementById("productGrid")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".add-to-cart-btn");
+    if (btn) {
+        const id = btn.dataset.id;
+        console.log("Add to Cart clicked for product ID:", id);
+        addToCart(id);
+    }
+});
+
+// Cart Core Operations
 function addToCart(productId) {
-    console.log("addToCart triggered for ID:", productId);
-
-    // Convert both IDs to strings so number vs string comparison doesn't fail
     const product = allProducts.find(p => String(p.id) === String(productId));
-    
-    if (!product) {
-        console.error("Product not found in allProducts array:", productId, allProducts);
-        return;
-    }
+    if (!product) return;
 
-    const existingIndex = cart.findIndex(item => String(item.product_id) === String(productId));
+    const existingIndex = cart.findIndex(item => String(item.id) === String(productId));
     if (existingIndex > -1) {
-        cart[existingIndex].quantity += 1;
+        cart[existingIndex].qty += 1;
     } else {
-        cart.push({
-            product_id: product.id,
-            name: product.name,
-            price: product.price,
-            image_url: product.image_url,
-            quantity: 1
-        });
+        cart.push({ ...product, qty: 1 });
     }
 
-    saveCart();
+    updateCartUI();
     toggleCart(true);
 }
 
-function updateQuantity(productId, delta) {
-    const index = cart.findIndex(item => String(item.product_id) === String(productId));
-    if (index > -1) {
-        cart[index].quantity += delta;
-        if (cart[index].quantity <= 0) cart.splice(index, 1);
-    }
-    saveCart();
-}
-
-function saveCart() {
-    localStorage.setItem("shopcandy_cart", JSON.stringify(cart));
-    updateCartUI();
-}
-
 function updateCartUI() {
-    const cartCountContainer = document.getElementById("cartCount");
-    if (cartCountContainer) {
-        cartCountContainer.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
-    }
-
-    const cartContainer = document.getElementById("cartItems");
+    const cartCount = document.getElementById("cartCount");
+    const cartItems = document.getElementById("cartItems");
     const cartFooter = document.getElementById("cartFooter");
+    const cartSubtotal = document.getElementById("cartSubtotal");
 
-    if (!cartContainer) return;
+    const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+    if (cartCount) cartCount.textContent = totalCount;
 
     if (!cart.length) {
-        cartContainer.innerHTML = `<p style="text-align: center; color: var(--gray); margin-top: 2rem;">Your cart is currently empty.</p>`;
+        if (cartItems) cartItems.innerHTML = `<p style="text-align: center; color: var(--gray); margin-top: 2rem;">Your cart is empty.</p>`;
         if (cartFooter) cartFooter.style.display = "none";
         return;
     }
 
     if (cartFooter) cartFooter.style.display = "block";
-    let subtotal = 0;
 
-    cartContainer.innerHTML = cart.map(item => {
-        const itemTotal = item.price * item.quantity;
-        subtotal += itemTotal;
-        return `
-            <div class="cart-item">
-                <img src="${item.image_url || 'https://via.placeholder.com/60'}" alt="${item.name}">
-                <div class="cart-item-info">
-                    <h4>${item.name}</h4>
-                    <div>₦${(item.price / 100).toLocaleString()}</div>
-                    <div class="qty-controls">
-                        <button type="button" class="qty-btn" onclick="updateQuantity('${item.product_id}', -1)">-</button>
-                        <span>${item.quantity}</span>
-                        <button type="button" class="qty-btn" onclick="updateQuantity('${item.product_id}', 1)">+</button>
+    let subtotal = 0;
+    if (cartItems) {
+        cartItems.innerHTML = cart.map((item, index) => {
+            const itemTotal = item.price * item.qty;
+            subtotal += itemTotal;
+            return `
+                <div class="cart-item">
+                    <img src="${item.image_url || 'https://via.placeholder.com/60?text=Candy'}" alt="${item.name}">
+                    <div class="cart-item-info">
+                        <h4 style="font-size: 0.9rem;">${item.name}</h4>
+                        <div style="font-size: 0.85rem; font-weight: bold;">₦${(item.price / 100).toLocaleString()}</div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
 
-    const subtotalEl = document.getElementById("cartSubtotal");
-    if (subtotalEl) subtotalEl.innerText = `₦${(subtotal / 100).toLocaleString()}`;
+    if (cartSubtotal) cartSubtotal.textContent = `₦${(subtotal / 100).toLocaleString()}`;
+}
+
+function changeQty(index, delta) {
+    if (cart[index]) {
+        cart[index].qty += delta;
+        if (cart[index].qty <= 0) {
+            cart.splice(index, 1);
+        }
+        updateCartUI();
+    }
 }
 
 function toggleCart(open) {
-    const overlay = document.getElementById("drawerOverlay");
     const drawer = document.getElementById("cartDrawer");
-    if (overlay) overlay.classList.toggle("open", open);
-    if (drawer) drawer.classList.toggle("open", open);
-}
-
-// 6. Submit Order & Redirect to WhatsApp
-async function handleCheckout(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    console.log("Checkout trigger fired!");
-
-    if (!cart || cart.length === 0) {
-        alert("Your cart is empty! Add an item before checking out.");
-        return;
-    }
-
-    const nameInput = document.getElementById("custName");
-    const phoneInput = document.getElementById("custPhone");
-    const emailInput = document.getElementById("custEmail");
-    const addressInput = document.getElementById("custAddress");
-
-    if (!nameInput.value || !phoneInput.value || !emailInput.value || !addressInput.value) {
-        alert("Please fill in all checkout fields.");
-        return;
-    }
-
-    const btn = document.getElementById("checkoutBtn");
-    if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Processing Order...";
-    }
-
-    const payload = {
-        customer_name: nameInput.value,
-        phone: phoneInput.value,
-        email: emailInput.value,
-        address: addressInput.value,
-        cart_items: cart
-    };
-
-    try {
-        const res = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to process checkout");
-
-        cart = [];
-        saveCart();
-        window.location.href = data.whatsapp_url;
-    } catch (err) {
-        alert("Checkout Error: " + err.message);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = "Preorder via WhatsApp 🚀";
-        }
+    const overlay = document.getElementById("drawerOverlay");
+    
+    if (open) {
+        drawer?.classList.add("open");
+        overlay?.classList.add("open");
+        document.body.classList.add("drawer-open");
+    } else {
+        drawer?.classList.remove("open");
+        overlay?.classList.remove("open");
+        document.body.classList.remove("drawer-open");
     }
 }
 
-// Bind functions directly to window
-window.addToCart = addToCart;
-window.filterCategory = filterCategory;
-window.updateQuantity = updateQuantity;
-window.handleCheckout = handleCheckout;
+function handleCheckout(e) {
+    e.preventDefault();
+    const name = document.getElementById("custName").value;
+    const phone = document.getElementById("custPhone").value;
+    const email = document.getElementById("custEmail").value;
+    const address = document.getElementById("custAddress").value;
+
+    let itemsList = cart.map(item => `• ${item.name} x${item.qty} (₦${((item.price * item.qty)/100).toLocaleString()})`).join('%0A');
+    let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    let message = `*New ShopCandy Order*%0A%0A` +
+        `*Customer Details:*%0A` +
+        `Name: ${name}%0A` +
+        `Phone: ${phone}%0A` +
+        `Email: ${email}%0A` +
+        `Address: ${address}%0A%0A` +
+        `*Order Items:*%0A${itemsList}%0A%0A` +
+        `*Total:* ₦${(total/100).toLocaleString()}`;
+
+    window.open(`https://wa.me/2348163807873?text=${message}`, '_blank');
+}
+
+// Expose functions globally for direct HTML attribute calls
 window.toggleCart = toggleCart;
+window.changeQty = changeQty;
+window.handleCheckout = handleCheckout;
+window.addToCart = addToCart;
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", fetchProducts);
