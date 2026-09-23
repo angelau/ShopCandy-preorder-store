@@ -60,14 +60,32 @@
                 <span id="cartSubtotal">₦0</span>
             </div>
             
-            <form id="checkoutForm" onsubmit="handleCheckout(event)" style="margin-top: 1rem;">
-                <input type="text" id="custName" placeholder="Full Name *" required style="width: 100%; padding: 0.6rem; margin-bottom: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
-                <input type="tel" id="custPhone" placeholder="WhatsApp Phone Number *" required style="width: 100%; padding: 0.6rem; margin-bottom: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
-                <input type="email" id="custEmail" placeholder="Email Address (Optional)" style="width: 100%; padding: 0.6rem; margin-bottom: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
-                <textarea id="custAddress" placeholder="Delivery Address *" required style="width: 100%; padding: 0.6rem; margin-bottom: 0.8rem; border: 1px solid #ccc; border-radius: 6px;" rows="2"></textarea>
-                
-                <button type="submit" class="btn-primary" id="checkoutBtn">Preorder via WhatsApp 🚀</button>
-            </form>
+            <!-- Inside your #cartDrawer or #cartFooter -->
+<form id="checkoutForm" onsubmit="handleCheckout(event)">
+    <div class="form-group">
+        <label for="custName">Full Name</label>
+        <input type="text" id="custName" required placeholder="Jane Doe">
+    </div>
+
+    <div class="form-group">
+        <label for="custPhone">Phone Number</label>
+        <input type="tel" id="custPhone" required placeholder="08012345678">
+    </div>
+
+    <div class="form-group">
+        <label for="custEmail">Email Address</label>
+        <input type="email" id="custEmail" required placeholder="jane@example.com">
+    </div>
+
+    <div class="form-group">
+        <label for="custAddress">Delivery Address</label>
+        <textarea id="custAddress" required placeholder="Enter delivery address"></textarea>
+    </div>
+
+    <button type="submit" id="checkoutBtn" class="btn-primary" style="width: 100%; margin-top: 1rem;">
+        Preorder via WhatsApp 🚀
+    </button>
+</form>
         </div>
     </div>
 
